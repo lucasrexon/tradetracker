@@ -6,3 +6,4 @@ data/cache.json
 data/history.json
 *.log
 .DS_Store
+web/dist-hosted/

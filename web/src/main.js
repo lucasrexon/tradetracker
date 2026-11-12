@@ -32,6 +32,10 @@ const ui = {
   expandedNews: new Set(),
   collapsed: window.matchMedia('(max-width: 900px)').matches,
   alerted: new Set(),
+  canWrite: true,
+  canAsk: typeof api.askClaude === 'function',
+  reads: new Map(),
+  confirmDelete: null,
 };
 
 let world = null;
@@ -68,6 +72,7 @@ function current() {
 function select(id) {
   if (id && id === ui.selectedId && !els.detail.hidden) return;
   ui.selectedId = id || null;
+  ui.confirmDelete = null;
   world?.select(ui.selectedId);
   render();
 }
@@ -118,6 +123,8 @@ connect({
   onState(state) {
     state.__first = first;
     ui.state = state;
+    ui.canWrite = state.hosted?.canWrite ?? true;
+    document.getElementById('add-trade').hidden = !ui.canWrite;
     world?.update(state);
     if (ui.selectedId && !current()) ui.selectedId = null;
     checkAlerts(state);
@@ -191,6 +198,30 @@ els.detail.addEventListener('click', async (e) => {
     case 'close':
       select(null);
       break;
+    case 'ask': {
+      const id = trade.id;
+      const read = { state: 'loading', text: '' };
+      ui.reads.set(id, read);
+      renderDetail(els.detail, trade, ui);
+      const rerender = () => current()?.id === id && renderDetail(els.detail, current(), ui);
+      try {
+        const res = await api.askClaude(trade, {
+          onText: ({ text }) => {
+            read.text = text;
+            rerender();
+          },
+        });
+        read.text = res.text;
+        read.truncated = res.truncated;
+        read.state = 'done';
+      } catch (err) {
+        read.state = 'error';
+        read.error = err.code === 'not_granted' ? 'Claude was not allowed for this page.' : err.code === 'rate_limited' ? 'Too many requests. Try again in a minute.' : err.message || 'Claude could not answer.';
+        if (err.code === 'not_granted') ui.canAsk = false;
+      }
+      rerender();
+      break;
+    }
     case 'pillar': {
       const key = btn.dataset.key;
       ui.openPillars.has(key) ? ui.openPillars.delete(key) : ui.openPillars.add(key);
@@ -207,15 +238,28 @@ els.detail.addEventListener('click', async (e) => {
     case 'close-trade':
       openTradeDialog(els.dialog, { mode: 'close', trade, onSaved: afterSave });
       break;
-    case 'refresh':
-      await api.refresh(trade.ticker).catch(() => {});
-      toast(els.toasts, { title: `Refreshing ${trade.ticker}`, body: 'Queued within your API rate limit.', ttl: 3000 });
+    case 'refresh': {
+      const res = await api.refresh(trade.ticker).catch((err) => ({ message: err.message }));
+      toast(els.toasts, { title: `Refreshing ${trade.ticker}`, body: res?.message || 'Queued within your API rate limit.', ttl: 3500 });
       break;
+    }
     case 'delete':
-      if (!confirm(`Delete the ${trade.ticker} ${trade.direction} trade? This can't be undone.`)) return;
-      await api.deleteTrade(trade.id);
-      select(null);
-      toast(els.toasts, { title: `${trade.ticker} trade deleted`, ttl: 3000 });
+      ui.confirmDelete = trade.id;
+      renderDetail(els.detail, trade, ui);
+      break;
+    case 'delete-cancel':
+      ui.confirmDelete = null;
+      renderDetail(els.detail, trade, ui);
+      break;
+    case 'delete-confirm':
+      ui.confirmDelete = null;
+      try {
+        await api.deleteTrade(trade.id);
+        select(null);
+        toast(els.toasts, { title: `${trade.ticker} trade deleted`, ttl: 3000 });
+      } catch (err) {
+        toast(els.toasts, { title: err.message, color: 'var(--bad)' });
+      }
       break;
   }
 });

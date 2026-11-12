@@ -21,9 +21,18 @@ export function renderPortfolio(el, state, { selectedId, hoverId, collapsed }) {
   const closed = state.trades.filter((t) => t.status === 'closed');
   const sampleCount = state.trades.filter((t) => t.sample).length;
   const notices = [];
+  const hosted = state.hosted;
   if (state.mode === 'demo') {
-    notices.push('<div class="notice"><b>Demo data.</b> Prices, headlines and financials are synthetic. Add <code>MASSIVE_API_KEY</code> to <code>.env</code> for live data.</div>');
+    notices.push(
+      hosted
+        ? '<div class="notice"><b>Demo data.</b> Prices, headlines and financials here are synthetic. Open this page signed in to claude.ai to see the live tracker.</div>'
+        : '<div class="notice"><b>Demo data.</b> Prices, headlines and financials are synthetic. Add <code>MASSIVE_API_KEY</code> to <code>.env</code> for live data.</div>',
+    );
   }
+  if (hosted?.pending?.length) {
+    notices.push(`<div class="notice"><b>${hosted.pending.map(esc).join(', ')}</b> ${hosted.pending.length > 1 ? 'were' : 'was'} added after the last data sync. Prices, news and filings arrive with the next sync.</div>`);
+  }
+  if (hosted && !hosted.canWrite) notices.push('<div class="notice">You can view this tracker but not change it.</div>');
   if (state.status?.authError) notices.push(`<div class="notice bad"><b>Massive key rejected.</b> ${esc(state.status.authError)}</div>`);
   const unsupported = Object.keys(state.status?.unsupported || {});
   if (unsupported.length) notices.push(`<div class="notice">Not on your Massive plan: <b>${unsupported.map(esc).join(', ')}</b>. Those inputs are skipped.</div>`);
@@ -46,9 +55,7 @@ export function renderPortfolio(el, state, { selectedId, hoverId, collapsed }) {
     <div class="section-title"><h3>Past trades</h3><span>${closed.length}</span></div>
     ${closed.length ? `<ul class="trade-list">${closed.map((t) => rowHtml(t, selectedId, hoverId)).join('')}</ul>` : '<div class="empty">Closed trades land here with a post-mortem.</div>'}
     ${notices.join('')}
-    <div class="panel-foot">
-      <button class="btn small" data-action="import" type="button">Import CSV</button>
-    </div>`);
+    ${hosted && !hosted.canWrite ? '' : '<div class="panel-foot"><button class="btn small" data-action="import" type="button">Import CSV</button></div>'}`);
 }
 
 export function renderStatus(el, state, connection) {
@@ -58,10 +65,12 @@ export function renderStatus(el, state, connection) {
   const chips = [];
   const live = state.mode === 'live';
   const conn = connection === 'live' ? '' : ' (reconnecting)';
+  const synced = state.hosted?.syncedAt ? ` · synced ${timeAgo(state.hosted.syncedAt)}` : null;
+  const detail = live ? (synced ?? (s.realtime ? ' · real-time' : ' · end-of-day')) : ' · synthetic';
   chips.push(
-    `<span class="chip mode ${live ? 'live' : 'demo'} ${connection !== 'live' ? 'alert' : ''}"><span class="dot"></span><b>${live ? 'Live' : 'Demo'}</b>${conn || (live ? (s.realtime ? ' · real-time' : ' · end-of-day') : ' · synthetic')}</span>`,
+    `<span class="chip mode ${live ? 'live' : 'demo'} ${connection !== 'live' ? 'alert' : ''}" title="${live ? 'Prices are end-of-day; news and filings update with each sync' : 'Synthetic demo data'}"><span class="dot"></span><b>${live ? 'Live' : 'Demo'}</b>${conn || detail}</span>`,
   );
-  if (warming) {
+  if (warming && !state.hosted) {
     const frac = feeds.loaded / feeds.total;
     chips.push(`<span class="chip optional" title="Loading within your Massive rate limit">Loading data <span class="meter"><i style="width:${(frac * 100).toFixed(0)}%"></i></span> <b class="num">${feeds.loaded}/${feeds.total}</b></span>`);
   }

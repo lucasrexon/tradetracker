@@ -1,4 +1,4 @@
-import { EventEmitter } from 'node:events';
+import { Emitter } from './lib/emitter.js';
 import { fundamentalsSnapshot } from './analysis/xbrl.js';
 import { analyzePillars, composite } from './analysis/pillars.js';
 import { evaluateTrade, priceOn } from './analysis/trade.js';
@@ -12,7 +12,7 @@ const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
  *   'state' – the full evaluated portfolio (debounced)
  *   'news'  – each newly seen headline, for the live view's droplets
  */
-export class Engine extends EventEmitter {
+export class Engine extends Emitter {
   constructor({ config, store, cache, source, limiter, log = console, now = () => Date.now() }) {
     super();
     this.config = config;

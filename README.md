@@ -64,6 +64,29 @@ For a production build:
 npm run build && npm start
 ```
 
+## Hosted website (claude.ai)
+
+The same app also runs as a hosted page on claude.ai, with no server of your own:
+
+- `npm run build:hosted` builds `web/dist-hosted/`. It contains `page.html` (a page fragment) and `assets/`, using `vite.hosted.config.js`, which swaps the data layer for `web/src/hosted/api.js`.
+- The page runs the engine and the five-pillar analysis in the browser.
+- **Trades** live in the page's database (`trades/<id>`). You add and edit them on the site.
+- **Market data** can't be fetched from the browser, because the host blocks outside network calls. `scripts/sync-hosted.js` fetches it from Massive and SEC EDGAR and writes one JSON file per database document: `market/<T>`, `news/<T>`, `filings/<T>`, `macro/rates` and `meta/sync`. Claude then writes those files into the page database. The page streams changes in live, so new headlines drop into the pool.
+- Signed-out viewers and previews fall back to the synthetic demo.
+- **Ask Claude for a read** in a trade's panel sends that trade's pillars, verdict and headlines to Claude for a short plain-language assessment.
+
+To refresh the data (what Claude does on each sync):
+
+1. Export the site's trades with the ArtifactData tool: `list` on `trades` with `out_dir`. Also list `requests`, the tickers someone asked to refresh.
+2. Run the sync:
+
+   ```bash
+   NODE_USE_ENV_PROXY=1 node scripts/sync-hosted.js --trades <exported trades dir> --out <dir> --cache data --force <requested tickers>
+   ```
+
+3. Write the files with ArtifactData `batch` using `file_path` entries. Pass each existing document's `version` as `if_version` (list the collections to get it), and leave it out for new tickers.
+4. Delete the handled `requests/<T>` documents.
+
 ## Configuration
 
 All settings live in `.env` (see `.env.example`):

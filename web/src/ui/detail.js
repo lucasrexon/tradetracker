@@ -79,6 +79,23 @@ function rangeHtml(t) {
   </div>`;
 }
 
+function claudeRead(trade, ui) {
+  if (!ui.canAsk) return '';
+  const read = ui.reads.get(trade.id);
+  if (!read) {
+    return `<div class="ask"><button class="btn small" data-action="ask" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Ask Claude for a read</button>
+      <span class="hint">A short take on whether the thesis still holds.</span></div>`;
+  }
+  const body = read.text ? esc(read.text) : read.state === 'error' ? '' : '<span class="hint">Thinking…</span>';
+  return `<div class="ask-read" aria-live="polite">
+    <div class="ask-head"><b>Claude's read</b>${read.state === 'done' ? `<button class="btn ghost small" data-action="ask" type="button">Ask again</button>` : ''}</div>
+    <p>${body}</p>
+    ${read.state === 'error' ? `<p class="hint">${esc(read.error)}</p>` : ''}
+    ${read.truncated ? '<p class="hint">The answer was cut short.</p>' : ''}
+  </div>`;
+}
+
 export function renderDetail(el, trade, ui) {
   if (!trade) {
     el.hidden = true;
@@ -121,6 +138,8 @@ export function renderDetail(el, trade, ui) {
         </div>
       </div>
 
+      ${claudeRead(trade, ui)}
+
       <div class="kv">
         <div><label>${closed ? 'Exit' : 'Last'}</label><b>${price(closed ? trade.exitPrice : trade.price?.last)}</b></div>
         <div><label>Entry</label><b>${price(trade.entryPrice)}</b></div>
@@ -157,10 +176,18 @@ export function renderDetail(el, trade, ui) {
         .join('')}</div>
 
       <div class="detail-actions">
-        <button class="btn small" data-action="edit" type="button">Edit</button>
+        ${
+          ui.canWrite
+            ? `<button class="btn small" data-action="edit" type="button">Edit</button>
         ${closed ? '' : '<button class="btn small" data-action="close-trade" type="button">Close trade</button>'}
         <button class="btn small" data-action="refresh" type="button">Refresh data</button>
-        <button class="btn small ghost danger" data-action="delete" type="button">Delete</button>
+        ${
+          ui.confirmDelete === trade.id
+            ? '<button class="btn small danger" data-action="delete-confirm" type="button">Delete for good</button><button class="btn small ghost" data-action="delete-cancel" type="button">Keep it</button>'
+            : '<button class="btn small ghost danger" data-action="delete" type="button">Delete</button>'
+        }`
+            : ''
+        }
       </div>
     </div>`);
   if (switched) el.scrollTop = 0;

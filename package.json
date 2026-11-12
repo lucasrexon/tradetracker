@@ -12,7 +12,9 @@
     "build": "vite build",
     "start": "node server/index.js",
     "demo": "DATA_MODE=demo node server/index.js --dev",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "build:hosted": "node scripts/build-hosted.js",
+    "sync:hosted": "node scripts/sync-hosted.js"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

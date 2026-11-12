@@ -1,5 +1,6 @@
 import { esc } from '../format.js';
-import { api, parseTradesCsv } from '../api.js';
+import { api } from '../api.js';
+import { parseTradesCsv } from '../csv.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const val = (v) => (v == null ? '' : esc(v));
