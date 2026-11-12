@@ -22,6 +22,7 @@ export const api = {
   deleteTrade: (id) => call('DELETE', `/api/trades/${encodeURIComponent(id)}`),
   importTrades: (rows) => call('POST', '/api/trades/import', rows),
   refresh: (ticker) => call('POST', `/api/refresh/${encodeURIComponent(ticker)}`),
+  saveAccount: (account) => call('PUT', '/api/account', account),
 };
 
 /** Live stream of portfolio state + headlines. EventSource reconnects on its own. */

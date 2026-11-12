@@ -9,8 +9,10 @@ import { MassiveClient } from './providers/massive.js';
 import { SecClient } from './providers/sec.js';
 import { LiveSource } from './providers/live.js';
 import { DemoSource } from './providers/demo.js';
-import { TradeStore } from './store.js';
+import { TradeStore, AccountStore } from './store.js';
 import { Engine } from './engine.js';
+
+export const DEMO_ACCOUNT = { startingCapital: 100_000, startDate: '2026-01-02', flows: [], currency: 'USD', sample: true };
 
 export async function createServer(config = loadConfig()) {
   fs.mkdirSync(config.dataDir, { recursive: true });
@@ -32,6 +34,12 @@ export async function createServer(config = loadConfig()) {
   }
 
   const engine = new Engine({ config, store, cache, source, limiter });
+  // Demo mode gets an example account so the portfolio view isn't empty.
+  const accounts = new AccountStore(
+    path.join(config.dataDir, config.mode === 'demo' ? 'account.demo.json' : 'account.json'),
+    config.mode === 'demo' ? DEMO_ACCOUNT : null,
+  );
+  engine.setAccount(accounts.get());
   const hub = new SseHub();
   engine.on('state', (state) => hub.broadcast('state', state));
   engine.on('news', (payload) => hub.broadcast('news', payload));
@@ -43,6 +51,14 @@ export async function createServer(config = loadConfig()) {
   app.get('/api/health', (req, res) => res.json({ ok: true, mode: config.mode }));
   app.get('/api/state', (req, res) => res.json(engine.getState()));
   app.get('/api/stream', (req, res) => hub.attach(req, res, [['state', engine.getState()]]));
+
+  app.get('/api/account', (req, res) => res.json(accounts.get()));
+  app.put('/api/account', (req, res) => {
+    const { account, errors } = accounts.save(req.body || {});
+    if (errors) return res.status(400).json({ errors });
+    engine.setAccount(account);
+    res.json(account);
+  });
 
   app.get('/api/trades', (req, res) => res.json(store.list()));
   app.post('/api/trades', (req, res) => {

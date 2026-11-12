@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { validateTrade } from './analysis/validate.js';
+import { validateTrade, validateAccount } from './analysis/validate.js';
 
 export { validateTrade };
 
@@ -57,5 +57,26 @@ export class TradeStore {
     const tmp = `${this.file}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(this.trades, null, 2));
     fs.renameSync(tmp, this.file);
+  }
+}
+
+/** Capital setup persisted as JSON. `null` until the user saves one. */
+export class AccountStore {
+  constructor(file, seed = null) {
+    this.file = file;
+    this.account = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : seed;
+  }
+
+  get() {
+    return this.account;
+  }
+
+  save(input) {
+    const { account, errors } = validateAccount(input);
+    if (errors.length) return { errors };
+    this.account = account;
+    fs.mkdirSync(path.dirname(this.file), { recursive: true });
+    fs.writeFileSync(this.file, JSON.stringify(account, null, 2));
+    return { account };
   }
 }

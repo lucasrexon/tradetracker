@@ -24,6 +24,11 @@ Each trade is a pool of liquid in a warm, Claude-inspired palette. Five droplets
 - **Checks the state of every trade.** It combines the pillars into a *fundamental support* score oriented to your direction (weak fundamentals support a short). Together with P&L, stop and target, that gives a verdict: *Thesis strong*, *intact*, *weakening*, *broken*, *Stop breached* or *Target reached*.
 - **Compares now vs. entry.** Fundamentals are rebuilt *point-in-time* from only the filings that existed on your entry (and exit) date. You can see whether the thesis has improved or deteriorated since you got in.
 - **Raises alerts** for stop and target hits, adverse headlines in the last 48 hours, a pillar flipping against you since entry, losses with no stop, and fresh filings.
+- **Tracks your portfolio.** Enter your starting capital, the date you funded the account, and any deposits or withdrawals. The **Account** panel then shows:
+  - **Portfolio value:** capital + net deposits + realized + open P&L.
+  - **Total return**, and a **daily value chart** rebuilt from your trades and price history.
+  - **Max drawdown**, money invested vs. available, and exposure.
+- **Measures your success rate.** This is the share of closed trades that made money, alongside average win and loss, profit factor, expectancy, average R, average hold time, best and worst trade, current streak, and long vs. short win rates.
 - **Post-mortems past trades.** Shows the realized P&L, fundamentals at exit, and how the price has moved since you sold.
 
 ## Reading the pool

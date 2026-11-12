@@ -2,6 +2,7 @@ import { Emitter } from './lib/emitter.js';
 import { fundamentalsSnapshot } from './analysis/xbrl.js';
 import { analyzePillars, composite } from './analysis/pillars.js';
 import { evaluateTrade, priceOn } from './analysis/trade.js';
+import { accountSummary } from './analysis/account.js';
 
 const DAY = 86_400_000;
 const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -33,6 +34,13 @@ export class Engine extends Emitter {
     this.demo = source.kind === 'demo';
     this.lastChange = 0;
     this.authError = null;
+    this.account = null;
+  }
+
+  /** Capital setup (starting capital, start date, deposits/withdrawals). */
+  setAccount(settings) {
+    this.account = settings || null;
+    this.scheduleEmit(0);
   }
 
   start() {
@@ -365,11 +373,14 @@ export class Engine extends Emitter {
     const trades = [...this.evaluated.values()]
       .filter((t) => order.has(t.id))
       .sort((a, b) => (a.status === b.status ? order.get(a.id) - order.get(b.id) : a.status === 'open' ? -1 : 1));
+    const barsByTicker = {};
+    for (const t of trades) barsByTicker[t.ticker] ||= this.cache.get(`price:${t.ticker}`)?.bars || [];
     return {
       generatedAt: this.now(),
       mode: this.source.kind,
       trades,
       portfolio: this.portfolio(trades),
+      account: accountSummary({ settings: this.account, trades, barsByTicker, today: isoDay(this.now()) }),
       macro: this.macro(),
       status: this.status(),
     };

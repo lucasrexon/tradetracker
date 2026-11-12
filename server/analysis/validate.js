@@ -49,3 +49,32 @@ export function validateTrade(input, existing = {}) {
   }
   return { trade, errors };
 }
+
+/**
+ * Account setup: starting capital, the date it was funded, and later
+ * deposits (positive) or withdrawals (negative).
+ */
+export function validateAccount(input = {}) {
+  const errors = [];
+  const today = new Date().toISOString().slice(0, 10);
+  const capital = input.startingCapital === '' || input.startingCapital == null ? 0 : Number(input.startingCapital);
+  if (!Number.isFinite(capital) || capital < 0) errors.push('Starting capital must be zero or a positive amount.');
+  const startDate = input.startDate ? String(input.startDate) : null;
+  if (startDate && !DATE_RE.test(startDate)) errors.push('Start date must be YYYY-MM-DD.');
+  else if (startDate && startDate > today) errors.push('Start date cannot be in the future.');
+
+  const flows = [];
+  const rows = Array.isArray(input.flows) ? input.flows.slice(0, 500) : [];
+  rows.forEach((f, i) => {
+    const amount = Number(f.amount);
+    const date = String(f.date || '');
+    if (!DATE_RE.test(date) || date > today) errors.push(`Deposit/withdrawal ${i + 1}: use a date on or before today.`);
+    else if (!Number.isFinite(amount) || amount === 0) errors.push(`Deposit/withdrawal ${i + 1}: enter a non-zero amount (negative for a withdrawal).`);
+    else flows.push({ id: f.id || globalThis.crypto.randomUUID(), date, amount, note: String(f.note || '').slice(0, 200) });
+  });
+  flows.sort((a, b) => (a.date < b.date ? -1 : 1));
+  return {
+    account: { startingCapital: capital, startDate, flows, currency: 'USD', updatedAt: new Date().toISOString() },
+    errors,
+  };
+}

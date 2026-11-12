@@ -1298,6 +1298,249 @@ a {
   white-space: pre-wrap;
 }
 
+/* ---------- Portfolio value + account ---------- */
+
+.value-hero {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'lbl spark'
+    'val spark'
+    'ret go';
+  align-items: end;
+  gap: 2px 10px;
+  margin: 10px 0 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--field);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.value-hero:hover,
+.value-hero[aria-expanded='true'] {
+  border-color: var(--clay);
+}
+
+.value-hero .lbl {
+  grid-area: lbl;
+  font-size: 11px;
+  color: var(--ink-3);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.value-hero strong {
+  grid-area: val;
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+.value-hero .ret {
+  grid-area: ret;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.value-hero .ret small {
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-left: 4px;
+}
+
+.value-hero .spark {
+  grid-area: spark;
+  align-self: center;
+}
+
+.value-hero .spark svg {
+  display: block;
+}
+
+.value-hero .go {
+  grid-area: go;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--clay);
+  justify-self: end;
+}
+
+.value-hero.empty {
+  grid-template-areas:
+    'lbl go'
+    'set go';
+  background: var(--clay-soft);
+  border-color: rgb(200 96 62 / 0.25);
+}
+
+.value-hero.empty .set {
+  grid-area: set;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.value-hero.empty .go {
+  align-self: center;
+  font-size: 18px;
+}
+
+.record {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--field);
+  border: 1px solid var(--line);
+}
+
+.record-line {
+  margin: 0;
+  font-size: 14px;
+}
+
+.record-line span {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.wl {
+  display: flex;
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.wl .w {
+  background: var(--good);
+}
+
+.wl .l {
+  background: var(--bad);
+}
+
+.stat-list {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.stat-list > div {
+  background: var(--glass-solid);
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+.stat-list dt {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.stat-list dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-list dd small,
+.kv b small {
+  font-weight: 500;
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.capital-form {
+  display: grid;
+  gap: 12px;
+}
+
+.capital-form .form-actions {
+  margin-top: 0;
+}
+
+.flows {
+  display: grid;
+  gap: 6px;
+}
+
+.flows-title {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink-2);
+}
+
+.flows-title em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ink-3);
+  margin-left: 4px;
+}
+
+.flow-row {
+  display: grid;
+  grid-template-columns: 9.5em 7.5em 1fr 32px;
+  gap: 6px;
+  align-items: center;
+}
+
+.flow-row input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 9px;
+  border-radius: 9px;
+  border: 1px solid var(--line-2);
+  background: var(--field);
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-row input:focus {
+  outline: none;
+  border-color: var(--clay);
+  box-shadow: 0 0 0 3px var(--clay-soft);
+}
+
+.flow-row .icon-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.flows .btn {
+  justify-self: start;
+}
+
+@media (max-width: 520px) {
+  .flow-row {
+    grid-template-columns: 1fr 1fr 32px;
+  }
+  .flow-row input[data-field='note'] {
+    grid-column: 1 / 3;
+    grid-row: 2;
+  }
+  .stat-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- News river ---------- */
 
 .river {

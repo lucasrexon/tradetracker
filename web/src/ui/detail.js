@@ -105,6 +105,7 @@ export function renderDetail(el, trade, ui) {
   const switched = el.dataset.id !== trade.id;
   el.hidden = false;
   el.dataset.id = trade.id;
+  el.setAttribute('aria-label', 'Trade detail');
   const v = trade.verdict || {};
   const vtone = VERDICT_TONE[v.code] || 'muted';
   const closed = trade.status === 'closed';

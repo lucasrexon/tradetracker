@@ -7,3 +7,5 @@ data/history.json
 *.log
 .DS_Store
 web/dist-hosted/
+data/account.json
+data/account.demo.json

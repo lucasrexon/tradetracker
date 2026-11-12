@@ -6,6 +6,7 @@ import { initTheme, currentTheme, toggleTheme, onThemeChange, SENTIMENT } from '
 import { World } from './scene/World.js';
 import { renderPortfolio, renderStatus, renderLegend, NewsRiver, toast } from './ui/hud.js';
 import { renderDetail } from './ui/detail.js';
+import { renderAccount, draftFrom } from './ui/account.js';
 import { openTradeDialog } from './ui/tradeForm.js';
 
 initTheme();
@@ -36,6 +37,10 @@ const ui = {
   canAsk: typeof api.askClaude === 'function',
   reads: new Map(),
   confirmDelete: null,
+  view: null, // 'account' while the account panel is open
+  accountDraft: null,
+  accountErrors: [],
+  accountSaving: false,
 };
 
 let world = null;
@@ -70,8 +75,9 @@ function current() {
 }
 
 function select(id) {
-  if (id && id === ui.selectedId && !els.detail.hidden) return;
+  if (id && id === ui.selectedId && !els.detail.hidden && ui.view !== 'account') return;
   ui.selectedId = id || null;
+  ui.view = null;
   ui.confirmDelete = null;
   world?.select(ui.selectedId);
   render();
@@ -91,9 +97,20 @@ function render() {
   if (!ui.state) return;
   renderPortfolio(els.portfolio, ui.state, ui);
   renderStatus(els.status, ui.state, ui.connection);
-  renderDetail(els.detail, current(), ui);
+  if (ui.view === 'account' && ui.state.account) renderAccount(els.detail, ui.state, ui);
+  else renderDetail(els.detail, current(), ui);
   river.render(ui.state);
   updateInsets();
+}
+
+function openAccount() {
+  if (ui.view === 'account') return select(null);
+  ui.selectedId = null;
+  world?.select(null);
+  ui.view = 'account';
+  ui.accountDraft = draftFrom(ui.state?.account);
+  ui.accountErrors = [];
+  render();
 }
 
 window.addEventListener('resize', updateInsets);
@@ -178,6 +195,7 @@ els.portfolio.addEventListener('click', (e) => {
   if (row) return select(row.dataset.id === ui.selectedId ? null : row.dataset.id);
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (action === 'import') openTradeDialog(els.dialog, { mode: 'import', onSaved: afterSave });
+  if (action === 'account') openAccount();
   if (action === 'collapse') {
     ui.collapsed = !ui.collapsed;
     render();
@@ -192,6 +210,7 @@ els.portfolio.addEventListener('mouseover', (e) => {
 els.detail.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
+  if (ui.view === 'account') return accountAction(btn);
   const trade = current();
   if (!trade) return;
   switch (btn.dataset.action) {
@@ -285,3 +304,56 @@ document.addEventListener('keydown', (e) => {
 
 // Refresh relative times in the river.
 setInterval(() => ui.state && river.render(ui.state), 30_000);
+
+// ---------- Account panel ----------
+
+function accountAction(btn) {
+  const draft = ui.accountDraft;
+  switch (btn.dataset.action) {
+    case 'close':
+      select(null);
+      break;
+    case 'flow-add':
+      draft.flows.push({ date: new Date().toISOString().slice(0, 10), amount: '', note: '' });
+      render();
+      document.getElementById(`flow-amount-${draft.flows.length - 1}`)?.focus();
+      break;
+    case 'flow-remove': {
+      const row = btn.closest('.flow-row');
+      if (row) draft.flows.splice(Number(row.dataset.index), 1);
+      render();
+      break;
+    }
+  }
+}
+
+els.detail.addEventListener('input', (e) => {
+  if (ui.view !== 'account' || !ui.accountDraft) return;
+  const field = e.target.dataset.field;
+  if (!field) return;
+  const row = e.target.closest('.flow-row');
+  if (row) ui.accountDraft.flows[Number(row.dataset.index)][field] = e.target.value;
+  else ui.accountDraft[field] = e.target.value;
+});
+
+els.detail.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'capital-form') return;
+  e.preventDefault();
+  ui.accountErrors = [];
+  ui.accountSaving = true;
+  render();
+  try {
+    const saved = await api.saveAccount(ui.accountDraft);
+    ui.accountDraft = {
+      startingCapital: saved.startingCapital ? String(saved.startingCapital) : '',
+      startDate: saved.startDate || '',
+      flows: saved.flows.map((f) => ({ id: f.id, date: f.date, amount: String(f.amount), note: f.note })),
+    };
+    toast(els.toasts, { title: 'Capital saved', body: 'Portfolio value and return now use it.', color: 'var(--good)', ttl: 3500 });
+  } catch (err) {
+    ui.accountErrors = err.errors?.length ? err.errors : [err.message];
+  } finally {
+    ui.accountSaving = false;
+    render();
+  }
+});

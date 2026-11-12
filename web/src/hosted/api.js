@@ -14,10 +14,12 @@ import { Engine } from '../../../server/engine.js';
 import { MemoryCache } from '../../../server/lib/memoryCache.js';
 import { RateLimiter } from '../../../server/lib/rateLimiter.js';
 import { DemoSource } from '../../../server/providers/demo.js';
-import { validateTrade } from '../../../server/analysis/validate.js';
+import { validateTrade, validateAccount } from '../../../server/analysis/validate.js';
 import samples from '../../../data/sample-trades.json';
 
 export { parseTradesCsv } from '../csv.js';
+
+const DEMO_ACCOUNT = { startingCapital: 100_000, startDate: '2026-01-02', flows: [], currency: 'USD', sample: true };
 
 const CONFIG = {
   refresh: {
@@ -174,6 +176,22 @@ export const api = {
     return { created, failed };
   },
 
+  /** Save starting capital, start date and deposits/withdrawals. */
+  async saveAccount(input) {
+    const { account, errors } = validateAccount(input);
+    if (errors.length) throw fail(errors.join(' '), errors);
+    if (mode === 'demo') {
+      engine.setAccount(account);
+      return account;
+    }
+    try {
+      await db.doc('settings/account').set(plain(account));
+    } catch (err) {
+      throw dbError(err);
+    }
+    return account;
+  },
+
   /** Ask the next data sync to prioritise this ticker. */
   async refresh(ticker) {
     if (mode === 'demo') return { message: 'Demo data refreshes by itself.' };
@@ -237,6 +255,7 @@ async function startDemo(handlers) {
   });
   engine.on('state', handlers.onState);
   engine.on('news', handlers.onNews);
+  engine.setAccount(DEMO_ACCOUNT);
   engine.start();
   engine.scheduleEmit(0);
   handlers.onConnection?.('live');
@@ -287,6 +306,8 @@ function startHosted(handlers) {
         apply(change.doc.id, change.doc.data());
       }
     }, onError);
+
+  db.doc('settings/account').onSnapshot((snap) => engine.setAccount(snap.exists ? snap.data() : null), onError);
 
   feed('market', (ticker, d) => {
     if (d.details) engine.accept({ key: `details:${ticker}`, name: 'details', ticker }, d.details);
