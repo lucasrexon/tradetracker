@@ -1,0 +1,62 @@
+[
+  {
+    "ticker": "AAPL",
+    "direction": "long",
+    "quantity": 40,
+    "entryDate": "2026-06-09",
+    "entryPrice": 290.55,
+    "stopLoss": 268,
+    "takeProfit": 380,
+    "thesis": "Services margin expansion and buybacks keep earnings compounding."
+  },
+  {
+    "ticker": "NVDA",
+    "direction": "long",
+    "quantity": 60,
+    "entryDate": "2026-09-15",
+    "entryPrice": 212.17,
+    "stopLoss": 185,
+    "takeProfit": 260,
+    "thesis": "Datacenter demand still outruns supply; growth should re-accelerate into next year."
+  },
+  {
+    "ticker": "MSFT",
+    "direction": "long",
+    "quantity": 25,
+    "entryDate": "2026-08-18",
+    "entryPrice": 481.63,
+    "stopLoss": 445,
+    "takeProfit": 580,
+    "thesis": "Azure growth plus Copilot monetisation at a reasonable multiple."
+  },
+  {
+    "ticker": "TSLA",
+    "direction": "short",
+    "quantity": 30,
+    "entryDate": "2026-02-03",
+    "entryPrice": 421.96,
+    "stopLoss": 460,
+    "takeProfit": 330,
+    "thesis": "Auto margins compressing while the valuation prices in perfection."
+  },
+  {
+    "ticker": "AMZN",
+    "direction": "long",
+    "quantity": 50,
+    "entryDate": "2026-03-10",
+    "entryPrice": 214.33,
+    "exitDate": "2026-08-18",
+    "exitPrice": 259.45,
+    "thesis": "AWS re-acceleration after the spring sell-off."
+  },
+  {
+    "ticker": "NVDA",
+    "direction": "long",
+    "quantity": 40,
+    "entryDate": "2026-01-13",
+    "entryPrice": 185.81,
+    "exitDate": "2026-04-14",
+    "exitPrice": 196.51,
+    "thesis": "Swing trade into the spring product event."
+  }
+]

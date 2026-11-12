@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>TradeTracker</title>
+    <meta name="description" content="Live 3D trade tracker: news and five fundamental analyses checking every position." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3c6 6 11 10 11 16a11 11 0 0 1-22 0C5 13 10 9 16 3z' fill='%23C8603E'/%3E%3C/svg%3E" />
+    <script>
+      try {
+        const t = localStorage.getItem('tt-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="stage" class="stage" aria-label="3D view of your trades"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+          <path class="drop-a" d="M20 4c7 7 13 12 13 19a13 13 0 0 1-26 0C7 16 13 11 20 4z" />
+          <circle class="drop-b" cx="29" cy="9" r="4" />
+        </svg>
+        <div>
+          <h1>TradeTracker</h1>
+          <p>Liquid fundamentals, live</p>
+        </div>
+      </div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+      <div class="actions">
+        <button class="icon-btn" id="legend-toggle" type="button" aria-label="How to read the view" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .9-1 1.6v.3M12 17h.01" /></svg>
+        </button>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+        </button>
+        <button class="btn primary" id="add-trade" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          <span>Add trade</span>
+        </button>
+      </div>
+    </header>
+
+    <aside class="panel portfolio" id="portfolio" aria-label="Portfolio"></aside>
+    <aside class="panel detail" id="detail" aria-label="Trade detail" hidden></aside>
+    <section class="legend" id="legend" hidden aria-label="How to read the view"></section>
+    <footer class="river" id="river" aria-label="Latest news"></footer>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    <dialog class="dialog" id="trade-dialog"></dialog>
+    <div class="boot" id="boot"><div class="boot-drop"></div><p>Pouring the pool…</p></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
