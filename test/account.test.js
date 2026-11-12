@@ -95,3 +95,23 @@ test('account validation', () => {
   assert.match(validateAccount({ startingCapital: -5 }).errors.join(), /zero or a positive/);
   assert.match(validateAccount({ flows: [{ date: '2026-02-01', amount: 0 }] }).errors.join(), /non-zero/);
 });
+
+test('return vs entry uses what you paid for open positions, not capital', () => {
+  const trades = [
+    evaluated({ id: 'a', ticker: 'X', direction: 'long', quantity: 10, entryDate: '2026-03-02', entryPrice: 100 }, 200, { positionValue: 1200 }),
+    evaluated({ id: 'b', ticker: 'X', direction: 'long', quantity: 5, entryDate: '2026-03-05', entryPrice: 120 }, null, { pnl: { abs: null, pct: null }, price: { awaiting: true } }),
+  ];
+  const a = accountSummary({ settings: { startingCapital: 10000, startDate: '2026-03-01' }, trades, barsByTicker: bars, today: '2026-03-05' });
+  assert.equal(a.costBasis, 1000);
+  assert.equal(a.openReturn, 0.2);
+  assert.equal(a.totalReturn, 0.02);
+  assert.deepEqual(a.awaiting, ['X']);
+});
+
+test('value history ignores closes from before a trade was opened', () => {
+  const trades = [evaluated({ id: 'a', ticker: 'X', direction: 'long', quantity: 10, entryDate: '2026-03-06', entryPrice: 80 }, 0)];
+  // Another holding already has a 03-06 close; X's latest close (03-05) predates the X entry.
+  const barsByTicker = { ...bars, Y: [{ date: '2026-03-06', c: 1 }] };
+  const curve = equityCurve({ settings: { startingCapital: 1000, startDate: '2026-03-01' }, trades, barsByTicker, today: '2026-03-06' });
+  assert.equal(Object.fromEntries(curve)['2026-03-06'], 1000);
+});

@@ -10,7 +10,9 @@ function pnlOn(trade, date, bars) {
   if (trade.entryDate > date) return 0;
   const dir = trade.direction === 'short' ? -1 : 1;
   if (trade.exitDate && trade.exitDate <= date) return dir * (trade.exitPrice - trade.entryPrice) * trade.quantity;
-  const mark = priceOn(bars, date)?.c ?? trade.entryPrice;
+  const bar = priceOn(bars, date);
+  // Before the first close after entry, the position is worth what was paid.
+  const mark = bar && bar.date >= trade.entryDate ? bar.c : trade.entryPrice;
   return dir * (mark - trade.entryPrice) * trade.quantity;
 }
 
@@ -138,6 +140,12 @@ export function accountSummary({ settings, trades, barsByTicker = {}, today = is
   const shortValue = sum(open.filter((t) => t.direction === 'short'), (t) => t.positionValue);
   const invested = longValue + shortValue;
   const hasCapital = capital > 0;
+  // What you paid for the open positions that have a price since entry, and
+  // how far they've moved from those entry prices.
+  const priced = open.filter((t) => t.pnl?.pct != null);
+  const costBasis = sum(priced, (t) => t.entryPrice * t.quantity);
+  const openReturn = costBasis > 0 ? sum(priced, (t) => t.pnl.abs) / costBasis : null;
+  const awaiting = open.filter((t) => t.price?.awaiting).map((t) => t.ticker);
   const curve = equityCurve({ settings, trades, barsByTicker, today, equityNow: equity });
 
   return {
@@ -152,6 +160,9 @@ export function accountSummary({ settings, trades, barsByTicker = {}, today = is
     realized,
     unrealized,
     invested,
+    costBasis,
+    openReturn,
+    awaiting,
     longValue,
     shortValue,
     available: hasCapital ? equity - invested : null,

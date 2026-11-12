@@ -70,3 +70,11 @@ test('adverse news alert depends on direction', () => {
   assert.ok(long.alerts.some((a) => a.text.startsWith('Adverse news')));
   assert.ok(!short.alerts.some((a) => a.text.startsWith('Adverse news')));
 });
+
+test('a close from before the entry date is not used for P&L', () => {
+  const t = evaluateTrade({ ...base, entryDate: '2026-09-05', entryPrice: 95 }, { bars, compositeNow: { score: 60 } }, now);
+  assert.equal(t.price.awaiting, true);
+  assert.equal(t.pnl.pct, null);
+  assert.equal(t.pnl.abs, null);
+  assert.ok(t.alerts.some((a) => /No closing price since you bought/.test(a.text)));
+});

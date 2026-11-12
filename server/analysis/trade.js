@@ -72,7 +72,10 @@ export function evaluateTrade(trade, ctx, now = new Date()) {
   const lastDate = live?.date ?? lastBar?.date ?? null;
   const prevBar = bars.length > 1 ? bars.at(live ? -1 : -2) : null;
   const dayChange = lastPrice != null && prevBar ? lastPrice / prevBar.c - 1 : null;
-  const mark = closed ? trade.exitPrice : lastPrice;
+  // A close from before the purchase says nothing about this trade: wait for
+  // the first price on or after the entry date instead of inventing P&L.
+  const awaitingPrice = !closed && !live && (!lastDate || lastDate < trade.entryDate);
+  const mark = closed ? trade.exitPrice : awaitingPrice ? null : lastPrice;
 
   const pnlPct = mark != null ? (dir * (mark - trade.entryPrice)) / trade.entryPrice : null;
   const pnlAbs = mark != null ? dir * (mark - trade.entryPrice) * trade.quantity : null;
@@ -89,7 +92,7 @@ export function evaluateTrade(trade, ctx, now = new Date()) {
   const stopHit =
     !closed && trade.stopLoss != null
       ? firstBreach(bars, trade.entryDate, null, (b) => (isLong ? b.l <= trade.stopLoss : b.h >= trade.stopLoss)) ||
-        (lastPrice != null && (isLong ? lastPrice <= trade.stopLoss : lastPrice >= trade.stopLoss) ? lastDate : null)
+        (mark != null && (isLong ? mark <= trade.stopLoss : mark >= trade.stopLoss) ? lastDate : null)
       : null;
   const targetHit =
     !closed && trade.takeProfit != null
@@ -105,6 +108,9 @@ export function evaluateTrade(trade, ctx, now = new Date()) {
   const verdict = verdictFor({ closed, alignment, delta, stopHit, targetHit, pnlPct, sinceExit });
 
   const alerts = [];
+  if (awaitingPrice && lastDate) {
+    alerts.push({ level: 'info', text: `No closing price since you bought on ${fmtDate(trade.entryDate)} yet. P&L starts with the next end-of-day price.` });
+  }
   if (!closed) {
     if (stopHit) alerts.push({ level: 'danger', text: `Stop ${trade.stopLoss} breached on ${fmtDate(stopHit)}.` });
     if (targetHit) alerts.push({ level: 'good', text: `Target ${trade.takeProfit} reached on ${fmtDate(targetHit)}.` });
@@ -139,7 +145,7 @@ export function evaluateTrade(trade, ctx, now = new Date()) {
     status: closed ? 'closed' : 'open',
     name: details?.name || trade.ticker,
     sector: details?.sector || null,
-    price: { last: lastPrice, date: lastDate, dayChange, live: !!live, series },
+    price: { last: lastPrice, date: lastDate, dayChange, live: !!live, awaiting: awaitingPrice, series },
     pnl: { pct: pnlPct, abs: pnlAbs, r: rMultiple, holdingDays, targetProgress, sinceExit },
     positionValue: mark != null ? Math.abs(mark * trade.quantity) : Math.abs(trade.entryPrice * trade.quantity),
     pillars: pillarsNow,

@@ -96,7 +96,7 @@ export class LiquidCell {
     const t = this.trade;
     const pnl = t.pnl?.pct;
     const cls = pnl == null ? '' : pnl >= 0 ? 'up' : 'down';
-    const pnlText = pnl == null ? '…' : `${pnl >= 0 ? '+' : '−'}${Math.abs(pnl * 100).toFixed(1)}%`;
+    const pnlText = pnl == null ? (t.price?.awaiting ? 'new' : '…') : `${pnl >= 0 ? '+' : '−'}${Math.abs(pnl * 100).toFixed(1)}%`;
     const flagged = !this.closed && (t.verdict?.code === 'stop' || t.verdict?.code === 'broken');
     this.labelEl.className = `cell-label ${this.closed ? 'closed' : ''} ${this.selected ? 'selected' : ''}`;
     this.labelEl.dataset.id = t.id;

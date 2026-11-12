@@ -11,9 +11,24 @@ const rowHtml = (t, selectedId, hoverId) => {
     <span class="swatch" style="background:${sw}"></span>
     <span class="name"><b>${esc(t.ticker)}</b><span class="pill ${t.direction}">${t.direction}</span>${t.sample ? '<span class="pill">sample</span>' : ''}</span>
     <span class="pnl num ${tone(t.pnl?.pct)}">${pct(t.pnl?.pct)}</span>
-    <span class="sub">${support}<span class="pill ${vtone}">${esc(t.verdict?.label || '')}</span><span class="num">${money(t.pnl?.abs, { sign: true, compact: true })}</span></span>
+    <span class="sub">${support}<span class="pill ${vtone}">${esc(t.verdict?.label || '')}</span>${t.price?.awaiting ? '<span class="pill">awaiting price</span>' : `<span class="num">${money(t.pnl?.abs, { sign: true, compact: true })}</span>`}</span>
   </button></li>`;
 };
+
+/**
+ * The headline percentage: how far open positions are from their entry
+ * prices (what you'd see in a brokerage app). With nothing open, fall back
+ * to the return on the capital you put in.
+ */
+function headline(a) {
+  if (a.openReturn != null) {
+    return { value: a.openReturn, short: `${pct(a.openReturn)} vs entry`, text: `${pct(a.openReturn)} vs entry <small>${money(a.unrealized, { sign: true, compact: true })} open</small>` };
+  }
+  if (a.awaiting?.length) {
+    return { value: null, short: 'awaiting price', text: `awaiting price <small>${a.awaiting.map(esc).join(', ')} bought today</small>` };
+  }
+  return { value: a.totalReturn, short: `${pct(a.totalReturn)} on capital`, text: `${pct(a.totalReturn)} on capital <small>${money(a.realized + a.unrealized, { sign: true, compact: true })}</small>` };
+}
 
 function valueHero(a, open) {
   if (!a) return '';
@@ -27,7 +42,7 @@ function valueHero(a, open) {
   return `<button class="value-hero" data-action="account" type="button" aria-expanded="${open}" aria-label="Open account: portfolio value ${money(a.equity)}">
     <span class="lbl">Portfolio value${a.sample ? ' <span class="pill">example</span>' : ''}</span>
     <strong class="num">${money(a.equity)}</strong>
-    <span class="ret num ${tone(a.totalReturn)}">${pct(a.totalReturn)} <small>${money(a.realized + a.unrealized, { sign: true, compact: true })}</small></span>
+    <span class="ret num ${tone(headline(a).value)}">${headline(a).text}</span>
     <span class="spark">${valueSpark(a.curve)}</span>
     <span class="go" aria-hidden="true">Account →</span>
   </button>`;
@@ -79,14 +94,14 @@ export function renderPortfolio(el, state, { selectedId, hoverId, collapsed, vie
     <div class="section-title" style="margin-top:0">
       <p class="eyebrow" style="margin:0">Portfolio <span class="collapsed-summary num">${
         a?.hasCapital
-          ? `<b>${money(a.equity, { compact: true })}</b> <b class="${tone(a.totalReturn)}">${pct(a.totalReturn)}</b>`
+          ? `<b>${money(a.equity, { compact: true })}</b> <b class="${tone(headline(a).value)}">${headline(a).short}</b>`
           : `<b class="${tone(p.openPnl)}">${money(p.openPnl, { sign: true, compact: true })}</b> open`
       } · win rate <b>${rec?.winRate == null ? '–' : `${Math.round(rec.winRate * 100)}%`}</b></span></p>
       <button class="btn ghost small mobile-toggle" data-action="collapse" type="button" aria-expanded="${!collapsed}">${collapsed ? 'Show' : 'Hide'}</button>
     </div>
     ${valueHero(a, accountOpen)}
     <div class="stats">
-      <div class="stat"><label>Open P&amp;L</label><strong class="${tone(p.openPnl)}">${money(p.openPnl, { sign: true, compact: true })}</strong><small>${money(p.openValue, { compact: true })} at market</small></div>
+      <div class="stat"><label>Open P&amp;L</label><strong class="${tone(p.openPnl)}">${money(p.openPnl, { sign: true, compact: true })}</strong><small>${a?.openReturn != null ? `${pct(a.openReturn)} vs entry` : a?.awaiting?.length ? 'awaiting first price' : `${money(p.openValue, { compact: true })} at market`}</small></div>
       <div class="stat"><label>Realized</label><strong class="${tone(p.realizedPnl)}">${money(p.realizedPnl, { sign: true, compact: true })}</strong><small>${p.closedCount} closed trade${p.closedCount === 1 ? '' : 's'}</small></div>
       <div class="stat"><label>Success rate</label><strong>${rec?.winRate == null ? '–' : `${Math.round(rec.winRate * 100)}%`}</strong><small>${rec?.closed ? `${rec.wins} of ${rec.closed} closed in profit` : 'no closed trades yet'}</small></div>
       <div class="stat"><label>Fundamental support</label><strong style="color:${scoreCss(p.alignment)}">${p.alignment ?? '–'}</strong><small>value-weighted, /100</small></div>

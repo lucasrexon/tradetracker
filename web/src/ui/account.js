@@ -130,7 +130,6 @@ export function renderAccount(el, state, ui) {
   el.dataset.id = 'account';
   el.setAttribute('aria-label', 'Account');
   if (!ui.accountDraft) ui.accountDraft = draftFrom(a);
-  const exposure = a.exposure == null ? '' : ` <small>${Math.round(a.exposure * 100)}%</small>`;
 
   morph(el, `
     <div class="detail-head">
@@ -139,7 +138,13 @@ export function renderAccount(el, state, ui) {
         <h2 class="num">${a.hasCapital ? money(a.equity) : money(a.realized + a.unrealized, { sign: true })}</h2>
         <div class="co">${
           a.hasCapital
-            ? `<span class="${tone(a.totalReturn)}"><b>${pct(a.totalReturn)}</b> ${money(a.realized + a.unrealized, { sign: true })}</span> since ${shortDate(a.startDate || a.curve?.[0]?.[0])}`
+            ? `${
+                a.openReturn != null
+                  ? `<span class="${tone(a.openReturn)}"><b>${pct(a.openReturn)}</b> vs entry</span> on open positions ·`
+                  : a.awaiting?.length
+                    ? 'Open positions awaiting their first price ·'
+                    : ''
+              } <span class="${tone(a.totalReturn)}"><b>${pct(a.totalReturn)}</b></span> on capital since ${shortDate(a.startDate || a.curve?.[0]?.[0])}`
             : 'Total P&amp;L. Add your capital below to see portfolio value and return.'
         }${a.sample ? ' <span class="pill">example capital</span>' : ''}</div>
       </div>
@@ -156,13 +161,13 @@ export function renderAccount(el, state, ui) {
 
       <div class="kv">
         <div><label>Capital put in</label><b>${a.hasCapital ? money(a.contributed, { compact: true }) : '—'}</b></div>
-        <div><label>Invested</label><b>${money(a.invested, { compact: true })}${exposure}</b></div>
+        <div><label>Paid for open positions</label><b>${money(a.costBasis, { compact: true })}</b></div>
         <div><label>Available</label><b>${a.available == null ? '—' : money(a.available, { compact: true })}</b></div>
         <div><label>Realized</label><b class="${tone(a.realized)}">${money(a.realized, { sign: true, compact: true })}</b></div>
-        <div><label>Open P&amp;L</label><b class="${tone(a.unrealized)}">${money(a.unrealized, { sign: true, compact: true })}</b></div>
+        <div><label>Open P&amp;L</label><b class="${tone(a.unrealized)}">${money(a.unrealized, { sign: true, compact: true })}${a.openReturn != null ? ` <small>${pct(a.openReturn)}</small>` : ''}</b></div>
         <div><label>Max drawdown</label><b class="${a.drawdown?.abs < 0 ? 'down' : ''}">${a.drawdown?.pct != null ? pct(a.drawdown.pct) : a.drawdown?.abs < 0 ? money(a.drawdown.abs, { compact: true }) : '—'}</b></div>
       </div>
-      <p class="hint" style="margin:6px 2px 0">Available is an estimate: capital plus P&amp;L minus what's tied up in open positions (shorts counted at full value).</p>
+      <p class="hint" style="margin:6px 2px 0">"vs entry" compares each open position's latest price with what you paid. "On capital" is all P&amp;L divided by the capital you put in. Available = capital plus P&amp;L minus the market value of open positions (shorts at full value)${a.exposure != null ? `; ${Math.round(a.exposure * 100)}% of your value is invested` : ''}.</p>
 
       <div class="section-title"><h3>Success rate</h3><span>${a.record.closed} closed</span></div>
       ${recordHtml(a.record)}
